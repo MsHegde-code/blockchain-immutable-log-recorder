@@ -1,10 +1,15 @@
 import { useState } from "react";
 
-function BlockViewer({ block }) {
+function BlockViewer({ block, brokenBlock, isChainValid }) {
   const [showLogs, setShowLogs] = useState(false);
 
+  // A block is considered tampered if:
+  // chain is invalid AND this block index >= broken block
+  const isTampered =
+    isChainValid === false && block.index >= brokenBlock;
+
   return (
-    <div className="block-card">
+    <div className={`block-card ${isTampered ? "tampered-block" : ""}`}>
       <h3>Block #{block.index}</h3>
 
       <p><strong>Hash:</strong></p>

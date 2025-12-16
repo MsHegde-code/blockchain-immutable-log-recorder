@@ -102,3 +102,13 @@ button:disabled {
   font-weight: 600;
   color: #111827;
 }
+
+/* Tampered block styling */
+.tampered-block {
+  border: 2px solid #dc2626;
+  background-color: #fef2f2;   
+}
+
+.tampered-block h3 {
+  color: #b91c1c;
+}

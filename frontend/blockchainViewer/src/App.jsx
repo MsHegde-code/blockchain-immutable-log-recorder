@@ -31,8 +31,14 @@ function App() {
     {status && <ChainStatus status={status} />}
 
     {blocks.map(block => (
-      <BlockViewer key={block.index} block={block} />
+      <BlockViewer
+        key={block.index}
+        block={block}
+        brokenBlock={status?.broken_block}
+        isChainValid={status?.valid}
+      />
     ))}
+
 
     <div className="pagination">
       <button disabled={page === 1} onClick={() => setPage(page - 1)}>

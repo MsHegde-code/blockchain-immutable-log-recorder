@@ -1,10 +1,13 @@
-from flask import Flask, jsonify
+import os
+import json
+
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from flask import request
 
 from blockchain.blockchain import Blockchain
+from blockchain.block import Block
 from blockchain.log_importer import read_jsonl, group_logs
-from blockchain.validator import validate_chain
+from blockchain.validator import validate_chain_from_file
 
 app = Flask(__name__)
 CORS(app)
@@ -16,24 +19,41 @@ LOG_FILES = [
     "data/system.jsonl"
 ]
 
-# Limiting to 1000 blocks for demo
 blockchain = Blockchain(max_blocks=1000)
+blockchain.chain = []  # clear genesis created by constructor
 
-for log_file in LOG_FILES:
-    logs = read_jsonl(log_file)
-    for group in group_logs(logs, block_size=5):
-        blockchain.add_block(group)
+if os.path.exists(CHAIN_PATH):
+    # LOAD EXISTING CHAIN (IMMUTABLE MODE)
+    with open(CHAIN_PATH, "r") as f:
+        chain_data = json.load(f)
 
-blockchain.save(CHAIN_PATH)
+    for b in chain_data:
+        block = Block(
+            index=b["index"],
+            logs=b["logs"],
+            previous_hash=b["previous_hash"]
+        )
+        # Override computed values to preserve immutability
+        block.timestamp = b["timestamp"]
+        block.hash = b["hash"]
 
-@app.route("/api/chain", methods=["GET"])
-def get_chain():
-    return jsonify(blockchain.to_list())
+        blockchain.chain.append(block)
+
+else:
+    # CREATE CHAIN ONLY ONCE
+    blockchain.chain = []
+    blockchain.create_genesis_block()
+
+    for log_file in LOG_FILES:
+        logs = read_jsonl(log_file)
+        for group in group_logs(logs, block_size=5):
+            blockchain.add_block(group)
+
+    blockchain.save(CHAIN_PATH)
 
 @app.route("/api/validate", methods=["GET"])
 def validate():
-    chain = blockchain.to_list()
-    valid, index, message = validate_chain(chain)
+    valid, index, message = validate_chain_from_file(CHAIN_PATH)
     return jsonify({
         "valid": valid,
         "broken_block": index,
@@ -60,6 +80,7 @@ def get_chain_paged():
         "total_pages": total_pages,
         "total_blocks": total_blocks
     })
+
 
 if __name__ == "__main__":
     app.run(debug=True)
