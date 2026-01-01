@@ -18,7 +18,7 @@ function App() {
 
   // Fetch paginated blocks
   useEffect(() => {
-    fetchPagedChain(page, 5).then(data => {
+    fetchPagedChain(page, 6).then(data => {
       setBlocks(data.blocks);
       setTotalPages(data.total_pages);
     });
@@ -30,15 +30,16 @@ function App() {
 
     {status && <ChainStatus status={status} />}
 
-    {blocks.map(block => (
-      <BlockViewer
-        key={block.index}
-        block={block}
-        brokenBlock={status?.broken_block}
-        isChainValid={status?.valid}
-      />
+    {blocks
+      .filter(block => block.index !== 0) 
+      .map(block => (
+        <BlockViewer
+          key={block.index}
+          block={block}
+          brokenBlock={status?.broken_block}
+          isChainValid={status?.valid}
+        />
     ))}
-
 
     <div className="pagination">
       <button disabled={page === 1} onClick={() => setPage(page - 1)}>

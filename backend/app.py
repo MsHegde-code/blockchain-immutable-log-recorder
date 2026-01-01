@@ -8,22 +8,28 @@ from blockchain.blockchain import Blockchain
 from blockchain.block import Block
 from blockchain.log_importer import read_jsonl, group_logs
 from blockchain.validator import validate_chain_from_file
+from utils.log_converter import convert_logs_to_jsonl
 
 app = Flask(__name__)
 CORS(app)
 
 CHAIN_PATH = "storage/chain.json"
-LOG_FILES = [
-    "data/security.jsonl",
-    "data/firewall.jsonl",
-    "data/system.jsonl"
+RAW_LOG_DIR = "data/logs"
+JSONL_DIR = "data"
+
+convert_logs_to_jsonl(RAW_LOG_DIR, JSONL_DIR)
+
+JSONL_FILES = [
+    os.path.join(JSONL_DIR, f)
+    for f in os.listdir(JSONL_DIR)
+    if f.endswith(".jsonl")
 ]
 
 blockchain = Blockchain(max_blocks=1000)
-blockchain.chain = []  # clear genesis created by constructor
+blockchain.chain = []
 
 if os.path.exists(CHAIN_PATH):
-    # LOAD EXISTING CHAIN (IMMUTABLE MODE)
+    # IMMUTABLE MODE: Load existing chain
     with open(CHAIN_PATH, "r") as f:
         chain_data = json.load(f)
 
@@ -33,23 +39,24 @@ if os.path.exists(CHAIN_PATH):
             logs=b["logs"],
             previous_hash=b["previous_hash"]
         )
-        # Override computed values to preserve immutability
         block.timestamp = b["timestamp"]
         block.hash = b["hash"]
-
         blockchain.chain.append(block)
 
 else:
-    # CREATE CHAIN ONLY ONCE
-    blockchain.chain = []
+    # CREATE CHAIN ONCE
     blockchain.create_genesis_block()
 
-    for log_file in LOG_FILES:
+    for log_file in JSONL_FILES:
         logs = read_jsonl(log_file)
         for group in group_logs(logs, block_size=5):
             blockchain.add_block(group)
 
     blockchain.save(CHAIN_PATH)
+
+# --------------------------------------------------
+# API Endpoints
+# --------------------------------------------------
 
 @app.route("/api/validate", methods=["GET"])
 def validate():
