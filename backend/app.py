@@ -25,7 +25,7 @@ JSONL_FILES = [
     if f.endswith(".jsonl")
 ]
 
-blockchain = Blockchain(max_blocks=1000)
+blockchain = Blockchain(max_blocks=2000)
 blockchain.chain = []
 
 if os.path.exists(CHAIN_PATH):
