@@ -1,3 +1,4 @@
+backend/storage/*
 backend/data/logs/*
 backend/data/*
-backend/storage/*
+backend/utils/__pycache__/*

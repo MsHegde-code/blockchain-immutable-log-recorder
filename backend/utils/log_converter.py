@@ -1,6 +1,7 @@
 import os
 import json
 from datetime import datetime
+from utils.evtx_parser import parse_evtx
 
 # NOTE:
 # This is a generic, demo-safe parser.
@@ -30,20 +31,33 @@ def convert_logs_to_jsonl(input_dir, output_dir):
         if os.path.exists(jsonl_path):
             continue
 
-        print(f"[+] Converting {filename} → {name}.jsonl")
+        if ext.lower() == ".evtx":
+            print(f"[+] Converting {filename} (EVTX) → {name}.jsonl")
+            with open(jsonl_path, "w") as fout:
+                for entry in parse_evtx(file_path):
+                     log_entry = {
+                        "timestamp": entry["timestamp"],
+                        "source_file": filename,
+                        "message": entry["message"]
+                    }
+                     fout.write(json.dumps(log_entry) + "\n")
+        
+        else:
+            # TEXT / LOG conversion
+            print(f"[+] Converting {filename} → {name}.jsonl")
 
-        with open(file_path, "r", errors="ignore") as fin, \
-             open(jsonl_path, "w") as fout:
+            with open(file_path, "r", errors="ignore") as fin, \
+                 open(jsonl_path, "w") as fout:
 
-            for line in fin:
-                line = line.strip()
-                if not line:
-                    continue
+                for line in fin:
+                    line = line.strip()
+                    if not line:
+                        continue
 
-                log_entry = {
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "source_file": filename,
-                    "message": line
-                }
+                    log_entry = {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "source_file": filename,
+                        "message": line
+                    }
 
-                fout.write(json.dumps(log_entry) + "\n")
+                    fout.write(json.dumps(log_entry) + "\n")

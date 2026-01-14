@@ -7,7 +7,8 @@ from flask_cors import CORS
 from blockchain.blockchain import Blockchain
 from blockchain.block import Block
 from blockchain.log_importer import read_jsonl, group_logs
-from blockchain.validator import validate_chain_from_file
+from blockchain.log_importer import read_jsonl, group_logs
+from blockchain.validator import validate_chain_from_file, validate_chain_against_raw_files
 from utils.log_converter import convert_logs_to_jsonl
 
 app = Flask(__name__)
@@ -25,7 +26,7 @@ JSONL_FILES = [
     if f.endswith(".jsonl")
 ]
 
-blockchain = Blockchain(max_blocks=2000)
+blockchain = Blockchain(max_blocks=4000)
 blockchain.chain = []
 
 if os.path.exists(CHAIN_PATH):
@@ -60,7 +61,8 @@ else:
 
 @app.route("/api/validate", methods=["GET"])
 def validate():
-    valid, index, message = validate_chain_from_file(CHAIN_PATH)
+    # Use the new robust validation that checks raw files
+    valid, index, message = validate_chain_against_raw_files(CHAIN_PATH, RAW_LOG_DIR)
     return jsonify({
         "valid": valid,
         "broken_block": index,
